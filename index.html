@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醒（さ）めない家</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <!-- Top Right UI Container -->
+    <div id="ui-container">
+        <!-- Icons Sidebar -->
+        <div id="icon-bar" style="display: none;">
+            <div class="ui-icon" id="settings-btn" title="設定">⚙️</div>
+            <div class="ui-icon" id="items-btn" title="アイテム">🎒</div>
+        </div>
+
+        <!-- Objective Overlay -->
+        <div id="objective-overlay" style="display: none;">
+            <div id="progress-text">99.000%</div>
+            <div id="objective-text">部屋から出る方法を探す</div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" style="display: none;">
+        <h3>設定</h3>
+        <div class="settings-item">
+            <label>明るさ</label>
+            <input type="range" id="brightness-slider" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <div class="settings-item">
+            <label>環境音</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+        </div>
+        <button id="settings-close-btn">閉じる</button>
+    </div>
+
+    <!-- Interaction Prompt -->
+    <div id="interact-notice">SPACEキーで調べる</div>
+
+    <!-- Movement Controls Hint -->
+    <div id="instructions" style="display: none;">
+        WASD / 矢印キー : 移動<br>
+        SPACE : 調べる・次へ
+    </div>
+
+    <!-- Dialogue Box for Narrative -->
+    <div id="dialogue-box" style="display: none;">
+        <div id="dialogue-text"></div>
+        <div id="choice-container" style="display: none;"></div>
+        <div class="dialogue-prompt" id="dialogue-prompt">▼ SPACEキー</div>
+    </div>
+
+    <!-- Intro Narrative Screen -->
+    <div id="intro-screen" style="display: none;">
+        <p id="intro-text"></p>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div id="loading-content">
+            <h2 id="loading-title">家を思い出す...</h2>
+            <div id="loading-bar-container">
+                <div id="loading-bar"></div>
+            </div>
+            <div id="loading-percentage">0%</div>
+            <p id="loading-sub">Downloading memories...</p>
+        </div>
+    </div>
+
+    <!-- Title / Start Screen -->
+    <div id="start-screen" style="display: none;">
+        <h1>醒（さ）めない家</h1>
+        <p></p>
+        <button id="start-btn">スタート</button>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div id="inventory-panel" style="display: none;">
+        <h3>所持品</h3>
+        <div id="inventory-list">
+            <!-- Items will be injected here -->
+        </div>
+        <button id="inventory-close-btn">閉じる</button>
+    </div>
+
+    <!-- Map Overlay -->
+    <div id="map-overlay" style="display: none;">
+        <div id="map-container">
+            <h2 id="map-floor-title">2F 見取り図</h2>
+            <div id="map-floor-toggles">
+                <button class="floor-toggle-btn" id="toggle-1f">1F</button>
+                <button class="floor-toggle-btn" id="toggle-2f">2F</button>
+            </div>
+            <div id="map-frame">
+                <!-- Room divs will be here -->
+                <div id="map-rooms"></div>
+                <!-- Player Marker -->
+                <div id="player-marker"></div>
+            </div>
+            <div class="dialogue-prompt" style="color: white; margin-top: 20px;">▼ SPACEキーで閉じる</div>
+        </div>
+    </div>
+
+    <!-- Photo Inspection Overlay -->
+    <div id="photo-overlay" style="display: none;">
+        <div id="photo-container">
+            <img src="/happy.png" alt="happy drawing" id="photo-img">
+            <div id="scattered-text-container"></div>
+        </div>
+        <div class="dialogue-prompt" style="color: white; margin-top: 20px;">▼ SPACEキーで閉じる</div>
+    </div>
+
+    <!-- Numeric Keypad Puzzle Overlay -->
+    <div id="puzzle-overlay" class="puzzle-overlay">
+        <div class="puzzle-title" id="puzzle-title">PASSWORD</div>
+        <div class="keypad-display" id="keypad-display">----</div>
+        <div class="keypad-grid">
+            <button class="keypad-btn">1</button>
+            <button class="keypad-btn">2</button>
+            <button class="keypad-btn">3</button>
+            <button class="keypad-btn">4</button>
+            <button class="keypad-btn">5</button>
+            <button class="keypad-btn">6</button>
+            <button class="keypad-btn">7</button>
+            <button class="keypad-btn">8</button>
+            <button class="keypad-btn">9</button>
+            <button class="keypad-btn clear">CLEAR</button>
+            <button class="keypad-btn">0</button>
+            <button class="keypad-btn cancel">✕</button>
+        </div>
+    </div>
+
+    <!-- Sliding Puzzle Overlay -->
+    <div id="sliding-puzzle-overlay" class="puzzle-overlay">
+        <div class="puzzle-title" id="sliding-puzzle-title">RECONSTRUCT MEMORY</div>
+        <div id="sliding-grid" class="sliding-grid">
+            <!-- Tiles will be injected here -->
+        </div>
+        <div class="puzzle-controls" style="display: flex; gap: 12px; margin-top: 20px;">
+            <button id="sliding-puzzle-close-btn" class="keypad-btn cancel" style="flex: 1;">✕</button>
+            <button id="sliding-puzzle-check-btn" class="keypad-btn confirm">〇</button>
+        </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
