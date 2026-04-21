@@ -105,7 +105,7 @@ class NightmareGame {
             { id: 'stairs', path: './audio/stairs.mp3' },
             { id: 'knock', path: './audio/knock.mp3' },
             { id: 'thud_2f', path: './audio/thud_2f.mp3' },
-            { id: 'heavy_footstep', path: './audio/heavy_footstep.mp3' },
+            { id: 'heavy_footsteps', path: './audio/heavy_footstep.mp3' },
             { id: 'item_get', path: './audio/item_get.mp3' },
             { id: 'keypad_unlock', path: './audio/keypad_unlock.mp3' },
             { id: 'thud', path: './audio/thud.mp3' },
@@ -2999,11 +2999,15 @@ class NightmareGame {
 
         // Footstep audio: short clip, played manually in sync with animation
         const stepAudio = this.soundAssets.heavy_footsteps;
-        stepAudio.loop = false;
+        if (stepAudio) {
+            stepAudio.loop = false;
+        }
 
         const playStep = () => {
-            stepAudio.currentTime = 0;
-            stepAudio.play().catch(e => console.log(e));
+            if (stepAudio) {
+                stepAudio.currentTime = 0;
+                stepAudio.play().catch(e => console.log(e));
+            }
         };
 
         let timeOffset = 0;
@@ -3212,7 +3216,7 @@ class NightmareGame {
                 this.showDialogue('……お姉ちゃん？ そこにいるの？ 冗談はやめてよ……。', () => {
                     // 4. モンスターの出現シーケンス
                     const loader = new THREE.TextureLoader();
-                    const tex = loader.load('./public/images/sister_monster.png');
+                    const tex = loader.load('./images/sister_monster.png');
                     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.5, opacity: 0 });
                     const monsterSprite = new THREE.Sprite(mat);
                     monsterSprite.scale.set(2.5, 3.5, 1);
@@ -3280,7 +3284,7 @@ class NightmareGame {
 
         // 2. Spawn Swarm
         const loader = new THREE.TextureLoader();
-        loader.load('./public/images/creepy_entity.png', (texture) => {
+        loader.load('./images/creepy_entity.png', (texture) => {
             const swarmGroup = new THREE.Group();
             this.scene.add(swarmGroup);
 
@@ -4358,7 +4362,7 @@ class NightmareGame {
 
         // Load the creepy sister monster texture
         const loader = new THREE.TextureLoader();
-        loader.load('./public/images/sister_monster.png', (texture) => {
+        loader.load('./images/sister_monster.png', (texture) => {
             const mMat = new THREE.MeshBasicMaterial({
                 map: texture,
                 transparent: true,
