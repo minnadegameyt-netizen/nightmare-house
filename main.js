@@ -2264,10 +2264,15 @@ class NightmareGame {
                 this.closeDialogue();
             };
 
-            if (c === 1 || c === 2) {
+            if (c === 1) {
                 this.showChoices('壁に何かのボタンがある。押しますか？', [
                     { text: 'はい', action: () => { this.handleInteraction(target); } },
-                    { text: 'いいえ', action: cancelAction } // 修正
+                    { text: 'いいえ', action: cancelAction }
+                ]);
+            } else if (c === 2) {
+                this.showChoices('……本当に押しますか？', [
+                    { text: 'はい', action: () => { this.handleInteraction(target); } },
+                    { text: 'いいえ', action: cancelAction }
                 ]);
             } else if (c === 3) {
                 this.showChoices('本+当に押#し%ますか？', [
@@ -3174,7 +3179,7 @@ class NightmareGame {
             if (this.loopCount === 2 && this.loop2_puzzles.entrance && !this.hasShownPostKeypad2FDialogue) {
                 this.hasShownPostKeypad2FDialogue = true;
                 this.showDialogue('……やっぱり、何かおかしい。みんな家にいないし、家から出られない…。', () => {
-                    this.showDialogue('...もしかして、夢なのか...夢じゃないのか...。');
+                    this.showDialogue('…とりあえず、さっきの音の正体を確かめないと。');
                 });
             }
         }, 500);
