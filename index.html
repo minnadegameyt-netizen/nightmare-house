@@ -80,6 +80,42 @@
         <button id="start-btn">スタート</button>
     </div>
 
+    <!-- System Instruction Screen -->
+    <div id="instruction-screen" style="display: none;">
+        <div id="instruction-modal">
+            <h2 class="instruction-title">SYSTEM INSTRUCTION</h2>
+            <div class="instruction-divider"></div>
+            <p class="instruction-subtitle">※本作はPCブラウザ用ゲームです</p>
+
+            <div class="instruction-body">
+                <div class="instruction-section">
+                    <h3 class="section-title">💾 セーブ機能について</h3>
+                    <p>本システムは「<span class="highlight-green">Day (1日)</span>」終了時に自動保存されます。</p>
+                    <p class="small-text">※調査の途中でブラウザを閉じると、その日の最初からやり直しになります。</p>
+                </div>
+
+                <div class="instruction-section warning-box">
+                    <h3 class="section-title warning">⚠️ 更新（リロード）について</h3>
+                    <p>調査中はブラウザの更新ボタン（F5）を押さないでください。</p>
+                    <p>画面の再読み込みが必要な場合は、必ず<span class="highlight-green">ゲーム内の [↺] ボタン</span>を使用してください。</p>
+                    <div class="reload-comparison">
+                        <div class="comparison-item danger">✕ ブラウザの更新</div>
+                        <div class="comparison-item success">○ ゲーム内の [↺]</div>
+                    </div>
+                </div>
+
+                <div class="instruction-section caution-box">
+                    <h3 class="section-title caution">⚠️ ご注意</h3>
+                    <p>本作にはホラー、ジャンプスケア（大きな音や突然の演出）および、不安を煽る表現が含まれています。</p>
+                    <p>心臓の弱い方、怖いものが苦手な方はご注意ください。</p>
+                    <p class="small-text">※この物語はフィクションであり、実在の人物・団体とは一切関係ありません。</p>
+                </div>
+            </div>
+
+            <button id="system-boot-btn">システム起動</button>
+        </div>
+    </div>
+
     <!-- Inventory Panel -->
     <div id="inventory-panel" style="display: none;">
         <h3>所持品</h3>

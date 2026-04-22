@@ -229,8 +229,17 @@ class NightmareGame {
     setupUI() {
         // Start button
         const startBtn = document.getElementById('start-btn');
+        const startScreen = document.getElementById('start-screen');
+        const instructionScreen = document.getElementById('instruction-screen');
+        const systemBootBtn = document.getElementById('system-boot-btn');
+
         startBtn.addEventListener('click', () => {
-            document.getElementById('start-screen').style.display = 'none';
+            startScreen.style.display = 'none';
+            instructionScreen.style.display = 'flex';
+        });
+
+        systemBootBtn.addEventListener('click', () => {
+            instructionScreen.style.display = 'none';
             this.startIntro();
         });
 
