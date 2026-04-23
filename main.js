@@ -524,7 +524,7 @@ class NightmareGame {
         // Auto-skip after some time
         this.introTimeouts.push(setTimeout(() => {
             this.skipIntro();
-        }, 6500));
+        }, 8000));
 
         // Click to skip
         introScreen.onclick = () => this.skipIntro();
@@ -2463,7 +2463,7 @@ class NightmareGame {
                 return;
             }
             if (this.hasOpenedParentsBox) {
-                this.showDialogue('トイレだ。<br>……あれ？ 行きたかったはずなのに、なんだかもう出そうにないや。……それに、中にいたはずのお姉ちゃんの気配も、もう消えていた。');
+                this.showDialogue('トイレだ。<br>……あれ？ 行きたかったはずなのに、なんだかもう出そうにないや。……それに、中にいたはずの気配も、もう消えていた。');
                 return;
             }
             this.showChoices('トイレの扉だ。鍵がかかっていて開かない。<br>……もしかして、お姉ちゃんが入ってる？', [
@@ -3120,7 +3120,7 @@ class NightmareGame {
                             this.doorL2F.position.z -= 0.05; // slide open
                             if (t2 > 1.5) {
                                 clearInterval(openAnim);
-                                this.showDialogue('今何か廊下にいたよね？誰だろう');
+                                this.showDialogue('今誰か廊下にいたよね？');
                             }
                         }, 16);
                     }, 1000);
@@ -4378,13 +4378,7 @@ class NightmareGame {
                 this.loop4_blockers = [];
 
                 setTimeout(() => {
-                    this.showDialogue('……光の玉の周りに群がっていた黒い影たちが、ノイズと共に弾け飛んだ。', () => {
-                        this.showDialogue('あいつら……お姉ちゃんじゃない。もっと、おぞましい何かだ。', () => {
-                            this.showDialogue('この家を外から侵食して、僕が思い出すのを『妨害』しようとしていた……？', () => {
-                                this.showDialogue('……本当は、お姉ちゃんは僕をあいつらから守ろうとしてくれていたの……？');
-                            });
-                        });
-                    });
+                    this.showDialogue('…！？そこにも何かいた！？');
                 }, 500);
             }
         }
@@ -4627,6 +4621,7 @@ class NightmareGame {
         // 画面を暗転させる
         const fader = this.createFader();
         fader.style.transition = 'opacity 0.5s ease-in-out';
+        fader.style.backgroundColor = '#000';
         fader.style.opacity = '1';
 
         setTimeout(() => {
@@ -4635,7 +4630,7 @@ class NightmareGame {
             this.scene.background = new THREE.Color(0x000000);
             if (this.scene.fog) {
                 this.scene.fog.color.setHex(0x000000);
-                this.scene.fog.density = 0.05; // 霧を濃くして奥を見えなくする
+                this.scene.fog.density = 0.05; // 奥が見えないように
             }
 
             const voidX = 0, voidY = -500, voidZ = 0;
@@ -4643,101 +4638,91 @@ class NightmareGame {
             this.camera.position.set(voidX, voidY + 2, voidZ + 5);
             this.camera.lookAt(voidX, voidY + 2, voidZ - 10);
 
-            // 暗転を明けて真っ暗な空間を見せる
-            fader.style.transition = 'opacity 0.1s ease-in-out';
+            // 暗転を明けて、完全な真っ暗空間を見せる
+            fader.style.transition = 'opacity 1.5s ease-in-out';
             fader.style.opacity = '0';
 
-            // 1. ノイズ（敵）の接近
-            const loader = new THREE.TextureLoader();
-            const texEnemy = loader.load('./images/creepy_entity.png');
-            // 真っ黒なノイズスプライト
-            const matEnemy = new THREE.SpriteMaterial({ map: texEnemy, transparent: true, alphaTest: 0.5, color: 0x111111 });
-            const noiseSprite = new THREE.Sprite(matEnemy);
-            noiseSprite.scale.set(3, 4, 1);
-            noiseSprite.position.set(voidX, voidY + 2, voidZ - 20); // 奥から来る
-            this.scene.add(noiseSprite);
+            setTimeout(() => {
+                // 【シーン開始】主人公の独白
+                this.showDialogue('……扉の先は、外じゃなかった。真っ暗で、何も見えない。', () => {
+                    this.showDialogue('さっきの絵……。僕には、妹ができるはずだった。', () => {
+                        this.showDialogue('じゃあ、僕を追いかけてきていた『あれ』は……', () => {
+                            this.showDialogue('……？ どこからか、声が聞こえる……？', () => {
 
-            // ノイズ音再生
-            if (this.soundAssets.noise_rush) {
-                this.soundAssets.noise_rush.currentTime = 0;
-                this.soundAssets.noise_rush.play().catch(e => { });
-            }
+                                // 【画面変化：カオスな空間へ】
+                                this.triggerGlitch(800);
 
-            let elapsed = 0;
-            let phase = 0;
-            let sisterSprite = null;
+                                // ノイズ音と心音
+                                if (this.soundAssets.noise_rush) {
+                                    this.soundAssets.noise_rush.currentTime = 0;
+                                    this.soundAssets.noise_rush.play().catch(e => { });
+                                }
+                                if (this.soundAssets.heartbeat) {
+                                    this.soundAssets.heartbeat.loop = true;
+                                    this.soundAssets.heartbeat.currentTime = 0;
+                                    this.soundAssets.heartbeat.play().catch(e => { });
+                                }
 
-            const anim = setInterval(() => {
-                elapsed += 0.016;
+                                // 背景を赤黒く変貌させる
+                                this.scene.background = new THREE.Color(0x220000);
+                                if (this.scene.fog) {
+                                    this.scene.fog.color.setHex(0x220000);
+                                    this.scene.fog.density = 0.1;
+                                }
 
-                if (phase === 0) {
-                    // ノイズが猛スピードで迫ってくる
-                    noiseSprite.position.z += 0.4;
-                    noiseSprite.scale.set(3 + elapsed * 2, 4 + elapsed * 2, 1);
+                                // 不気味な赤い光の明滅
+                                const chaosLight = new THREE.PointLight(0xff0000, 3.0, 30);
+                                chaosLight.position.set(voidX, voidY + 2, voidZ - 10);
+                                this.scene.add(chaosLight);
 
-                    // ギリギリまで迫ったら妹乱入
-                    if (noiseSprite.position.z > voidZ - 4) {
-                        phase = 1;
+                                const chaosAnim = setInterval(() => {
+                                    chaosLight.intensity = 1.0 + Math.random() * 4.0;
+                                    chaosLight.position.x = voidX + (Math.random() - 0.5) * 6;
+                                }, 80);
 
-                        // 妹（化け物）登場
-                        const texSister = loader.load('./images/sister_monster.png');
-                        const matSister = new THREE.SpriteMaterial({ map: texSister, transparent: true, alphaTest: 0.5 });
-                        sisterSprite = new THREE.Sprite(matSister);
-                        sisterSprite.scale.set(4.5, 6.5, 1);
+                                // 空間がカオスに変わってから、少し間を置いてテキスト再開
+                                setTimeout(() => {
+                                    this.showDialogue('うっ……なんだこれ……！？', () => {
+                                        this.showDialogue('すごく嫌な感じがする……さっきまでの静けさとは違う、何か『邪悪なもの』が近づいてきている……！', () => {
+                                            this.showDialogue('逃げないと……でも、体が動かない……！', () => {
 
-                        // 画面右側からタックルするように配置
-                        sisterSprite.position.set(voidX + 8, voidY + 2, voidZ - 3);
-                        this.scene.add(sisterSprite);
+                                                // 謎の声（呼び止め）
+                                                this.showDialogue('（……お…い……ん……）', () => {
+                                                    this.showDialogue('（……だめ……何かが、…じゃまを…してく…る…）', () => {
+                                                        this.showDialogue('え……？ 誰……？ ノイズが酷くて、よく聞き取れない……', () => {
+                                                            this.showDialogue('（……行かないで……なんか……おかし…い…）', () => {
+                                                                this.showDialogue('頭が……割れそうだ……意識が……遠のいていく……', () => {
 
-                        // 衝突音と咆哮を同時に再生
-                        if (this.soundAssets.heavy_hit) this.soundAssets.heavy_hit.play().catch(e => { });
-                        if (this.soundAssets.monster_roar) this.soundAssets.monster_roar.play().catch(e => { });
+                                                                    // 【暗転 → 5周目へ】
+                                                                    clearInterval(chaosAnim);
+                                                                    this.scene.remove(chaosLight);
+                                                                    if (this.soundAssets.heartbeat) this.soundAssets.heartbeat.pause();
 
-                        this.triggerGlitch(200);
-                    }
-                } else if (phase === 1) {
-                    // 妹が横から体当たり、ノイズは左奥へ吹き飛ぶ
-                    sisterSprite.position.x -= 0.8; // 左へ猛スピードでスライド
+                                                                    fader.style.transition = 'opacity 0.2s ease-in';
+                                                                    fader.style.backgroundColor = '#000';
+                                                                    fader.style.opacity = '1';
 
-                    if (sisterSprite.position.x < voidX + 0.5) {
-                        // 衝突位置付近で妹ストップ、ノイズが吹き飛ぶ
-                        noiseSprite.position.x -= 1.0;
-                        noiseSprite.position.z -= 0.5;
-                        noiseSprite.material.opacity -= 0.05; // 吹き飛びながらフェードアウト
+                                                                    setTimeout(() => {
+                                                                        this.isCinematicPlaying = false;
+                                                                        // 5周目開始（ここでループが進行し、カオスな家のマップが構築されます）
+                                                                        this.loopToStart();
+                                                                    }, 1000);
 
-                        sisterSprite.position.x = voidX + 0.5; // 少し右寄りでストップ
-
-                        // ノイズが消えたらフェーズ移行
-                        if (noiseSprite.material.opacity <= 0) {
-                            this.scene.remove(noiseSprite);
-                            phase = 2;
-                            elapsed = 0; // タイマーリセット
-                        }
-                    } else {
-                        // 衝突の瞬間だけ少しノイズも押される
-                        noiseSprite.position.x -= 0.2;
-                    }
-                } else if (phase === 2) {
-                    // 妹がこっちをチラッと見る「間」（約1秒）
-                    if (elapsed > 1.0) {
-                        clearInterval(anim);
-
-                        // バグッ！と画面が消える
-                        this.triggerGlitch(500);
-                        fader.style.transition = 'opacity 0.1s linear';
-                        fader.style.opacity = '1';
-
-                        setTimeout(() => {
-                            this.scene.remove(sisterSprite);
-                            this.isCinematicPlaying = false;
-
-                            // loopToStartを呼ぶと自動で loopCount が 5 に増えて5周目が始まります
-                            this.loopToStart();
-                        }, 600);
-                    }
-                }
-            }, 16);
-        }, 600);
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    });
+                                }, 1500); // 演出の「間」
+                            });
+                        });
+                    });
+                });
+            }, 1500); // 暗闇を見せる「間」
+        }, 500); // 暗転完了待ち
     }
 
 }
