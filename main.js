@@ -222,6 +222,7 @@ class NightmareGame {
         // 特定の音を強調
         if (this.soundAssets.item_get) this.soundAssets.item_get.volume = Math.min(1.0, this.volume * 1.8);
         if (this.soundAssets.stairs) this.soundAssets.stairs.volume = Math.min(1.0, this.volume * 1.8);
+        if (this.soundAssets.slap) this.soundAssets.slap.volume = Math.min(1.0, this.volume * 2.0);
 
         this.soundAssets.footstep.volume = this.volume;
     }
@@ -915,8 +916,8 @@ class NightmareGame {
         this.allLights = [];
 
         // Re-add persistent lights with increased base intensity
-        this.addLight(new THREE.AmbientLight(0x404050, 2.5), 2.5, true);
-        this.addLight(this.pointLight, 6.0, true);
+        this.addLight(new THREE.AmbientLight(0x404050, 1.8), 1.8, true);
+        this.addLight(this.pointLight, 4.5, true);
 
         // Reset interactables and collision
         this.interactables = [];
@@ -1022,35 +1023,15 @@ class NightmareGame {
         }
 
         if (this.loopCount === 4) {
-            // Loop 4 (NEW): 記憶の残響 - 追体験フェーズ
-            if (this.scene.fog) this.scene.fog.density = 0.06;
-            this.setSceneBrightness(0.8); // 少し暗め・青白い雰囲気
+            // 第4周：姉の部屋をロックし、リビングの記憶を最初から配置する
+            this.isSisterDoorOpen = false;
+            if (this.doorR) {
+                this.doorR.position.z = -13; // 扉を物理的に閉じる
+            }
+            this.spawnLivingMemory(); // リビングに光の玉を配置
 
-            // 第4周用の管理フラグの初期化
-            this.loop4_memory_count = 0;
-            this.loop4_memories = { sister_room: false, living_room: false, parents_room: false }; // ★parents_roomを追加
-            this.canExitHouse = false;
-
-            // 最初の影：自分の部屋の外（廊下中央付近）に配置
-            this.spawnSisterShadow(0, -10, 'SHADOW_STAIRS');
-
-            // 演出：1Fリビングに光球（Mesh）と光源を配置（記憶のメタファー）
-            const oXL = 100;
-            const memoryLight = new THREE.PointLight(0x60a5fa, 1.2, 12);
-            memoryLight.position.set(oXL + 11, -8.5, 2);
-            this.mapRoot.add(memoryLight);
-
-            // 目に見える光の玉を追加
-            const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
-            const sphereMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.8 });
-            const memorySphere = new THREE.Mesh(sphereGeo, sphereMat);
-            memorySphere.position.copy(memoryLight.position);
-            memorySphere.isFloating = true; // 浮遊アニメーション
-            memorySphere.originalY = memorySphere.position.y;
-            this.mapRoot.add(memorySphere);
-
-            this.interactables.push({ obj: memorySphere, name: 'LOOP4_LIVING_MEMORY', x: oXL + 11, z: 2 });
-
+            // 影の最初の配置
+            setTimeout(() => this.spawnSisterShadow(0, -17.5, 'SHADOW_STAIRS'), 1000);
         }
 
         if (this.loopCount === 5) {
@@ -1105,6 +1086,42 @@ class NightmareGame {
             this.updateObjective('あの子に会いにいく', 100.000);
         }
         this.applyBrightness();
+    }
+
+    spawnLivingMemory() {
+        const oXL = 100;
+        const memoryLight = new THREE.PointLight(0x60a5fa, 1.2, 12);
+        memoryLight.position.set(oXL + 11, -8.5, 2);
+        this.mapRoot.add(memoryLight);
+
+        const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.8 });
+        const memorySphere = new THREE.Mesh(sphereGeo, sphereMat);
+        memorySphere.position.copy(memoryLight.position);
+        memorySphere.isFloating = true;
+        memorySphere.originalY = memorySphere.position.y;
+        this.mapRoot.add(memorySphere);
+
+        this.interactables.push({ obj: memorySphere, name: 'LOOP4_LIVING_MEMORY', x: oXL + 11, z: 2 });
+    }
+
+    checkLoop4Memories() {
+        if (this.loop4_memory_count >= 2) {
+            this.updateObjective('2階から聞こえた物音を確かめる');
+            setTimeout(() => {
+                if (this.soundAssets.door_open) {
+                    this.soundAssets.door_open.currentTime = 0;
+                    this.soundAssets.door_open.play().catch(e => { });
+                }
+                this.triggerGlitch(400);
+                this.showDialogue('（ガチャッ……）<br>……！ 2階の方から、扉が開く音がした。お姉ちゃんの部屋……？', () => {
+                    this.isSisterDoorOpen = true;
+                    if (this.doorR) this.doorR.position.z = -15.5; // 扉を物理的に開ける
+                });
+            }, 1000);
+        } else {
+            this.updateObjective('記憶を辿る (' + this.loop4_memory_count + '/2)');
+        }
     }
 
     spawnLoop2Items() {
@@ -1801,7 +1818,11 @@ class NightmareGame {
         lrCabinet.position.set(-8.5, 0.6, -15.5); // Against the north wall
         this.mapRoot.add(lrCabinet);
         this.lrCabinet = lrCabinet;
-        this.interactables.push({ obj: lrCabinet, name: 'CABINET_LR', x: -8.5, z: -15.5 });
+
+        // ▼ 1周目の時だけ調べられるようにする
+        if (this.loopCount < 2) {
+            this.interactables.push({ obj: lrCabinet, name: 'CABINET_LR', x: -8.5, z: -15.5 });
+        }
 
         if (!this.hasHouseMap) {
             const mapGeo = new THREE.PlaneGeometry(0.6, 0.4);
@@ -2116,7 +2137,7 @@ class NightmareGame {
             } else if (this.loopCount === 5) {
                 this.showDialogue('お姉ちゃんのベッドが、……浮いてる。<br>雨の匂いが、ここからもする……。');
             } else {
-                this.showDialogue('お姉ちゃんのベッドだ。いつもお花のいい匂いがする。');
+                this.showDialogue('お姉ちゃんのベッドだ。お姉ちゃんはいない。');
             }
         }
         else if (target.name === 'DRESSER_BOY') {
@@ -2143,20 +2164,20 @@ class NightmareGame {
             this.showDialogue('……最近、おもちゃで遊んでない気がする。なんだか、ずっと前から大人だったような……変な感じ。');
         }
         else if (target.name === 'VANITY_SISTER') {
-            this.showDialogue('お姉ちゃんがいつも鏡を見てた場所だ。……鏡が曇っていて、僕の顔がよく見えない。');
+            this.showDialogue('お姉ちゃんの服が入っている。');
         }
         else if (target.name === 'SIDE_TABLE_SISTER') {
-            this.showDialogue('小さなテーブルの上に、お姉ちゃんが好きだった花のドライフラワーが飾ってある。');
+            this.showDialogue('小さなテーブル。何も置いていない。');
         }
         else if (target.name === 'BOOKSHELF_SISTER') {
-            this.showDialogue('難しい本がたくさん並んでる。お姉ちゃんは、僕よりずっと大人に見えたんだ。');
+            this.showDialogue('難しい本がたくさん並んでる。');
         }
         else if (target.name === 'CABINET_LR') {
-            this.showDialogue('書類や古い文房具が入っている。あまり使われていないみたいだ。');
+            this.showDialogue('書類や古い文房具が入っている。');
         }
         else if (target.name === 'HOUSE_MAP') {
             this.addProgress('get_map');
-            this.showDialogue('古い小さな机の上に、紙切れが置いてある。<br>……この家の見取り図みたいだ。<br><span style="color:#60a5fa;">【見取り図】を手に入れた。</span>', () => {
+            this.showDialogue('机の上に、紙切れが置いてある。<br>……家の地図？なんでこんなのが…？<br><span style="color:#60a5fa;">【見取り図】を手に入れた。</span>', () => {
                 this.inventory.push({
                     id: 'MAP_HOUSE', name: '見取り図', icon: '🗺️', action: () => {
                         this.showMap();
@@ -2411,7 +2432,7 @@ class NightmareGame {
                 return;
             }
             if (this.hasOpenedParentsBox) {
-                this.showDialogue('トイレだ。<br>不思議と尿意はなくなっている。……それに、中にいたはずのお姉ちゃんの気配も、もう消えていた。');
+                this.showDialogue('トイレだ。<br>……あれ？ 行きたかったはずなのに、なんだかもう出そうにないや。……それに、中にいたはずのお姉ちゃんの気配も、もう消えていた。');
                 return;
             }
             this.showChoices('トイレの扉だ。鍵がかかっていて開かない。<br>……もしかして、お姉ちゃんが入ってる？', [
@@ -2441,19 +2462,14 @@ class NightmareGame {
             console.log(`[Interaction] PARENTS_BOX (Loop: ${this.loopCount}, Opened: ${this.hasOpenedParentsBox})`);
 
             if (this.loopCount === 4 && !this.loop4_memories.parents_room) {
-                this.addProgress('memory_3');
+                this.addProgress('memory_parents');
                 this.loop4_memories.parents_room = true;
                 this.loop4_memory_count++;
-                this.showDialogue('両親の部屋だ。部屋の真ん中に、古い箱が置かれている。', () => {
+                this.showDialogue('部屋の真ん中に、古い箱が置かれている。', () => {
                     this.showDialogue('中には、一度も使われることのなかった小さなベビー服がしまわれている。', () => {
-                        this.showDialogue('お父さんもお母さんも、あの子のために用意したこれを、どうしても捨てられなかったんだ。', () => {
+                        this.showDialogue('……誰のために用意したんだろう。ずっと捨てられずにいたみたいだ。', () => {
                             this.triggerGlitch(200);
-
-                            if (this.loop4_memory_count >= 3) {
-                                this.updateObjective('お姉ちゃんの部屋にあった「あの絵」を確かめる');
-                            } else {
-                                this.updateObjective('記憶を辿る (' + this.loop4_memory_count + '/3)');
-                            }
+                            this.checkLoop4Memories();
                         });
                     });
                 });
@@ -2461,8 +2477,8 @@ class NightmareGame {
             }
 
             if (this.loopCount >= 6) {
-                this.showDialogue('……親の部屋に置かれた、この箱。', () => {
-                    this.showDialogue('中には、あの子のために用意されていたベビー服が入っている。', () => {
+                this.showDialogue('……。', () => {
+                    this.showDialogue('中には、あの子のために用意されていたベビー服…なのかな。', () => {
                         this.showDialogue('お父さんも、お母さんも、この箱を見るたびに胸を痛めていたんだろうか。<br>……ごめんね。僕たちが、ちゃんと向き合えていれば……。');
                     });
                 });
@@ -2520,6 +2536,8 @@ class NightmareGame {
         else if (target.name === 'DOOR_R') {
             if (this.isSisterDoorOpen) {
                 this.showDialogue('お姉ちゃんの部屋だ。');
+            } else if (this.loopCount === 4) {
+                this.showDialogue('お姉ちゃんの部屋の扉だ。<br>鍵がかかっている……。でも、中から微かに気配がする。');
             } else {
                 this.showDialogue('お姉ちゃんの部屋の扉だ。<br>鍵がかかっていて開かない。');
             }
@@ -2601,9 +2619,9 @@ class NightmareGame {
                     this.loop2_puzzles.entrance = true;
                     this.showDialogue('……『ガチャン』という重々しい解錠音とともに、電子ロックのランプが緑色に変わった。<br>お姉ちゃんの日記に書いていた日付…なんの日付なんだろう…。', () => {
                         // 2階から音が響く演出
-                        if (this.soundAssets.thud_2f) {
-                            this.soundAssets.thud_2f.currentTime = 0;
-                            this.soundAssets.thud_2f.play();
+                        if (this.soundAssets.thud) {
+                            this.soundAssets.thud.currentTime = 0;
+                            this.soundAssets.thud.play();
                         }
                         this.showDialogue('……その時、2階の方から「ゴトッ」と、何かが落ちるような音が聞こえた。', () => {
                             this.spawnLoop2Items(); // Spawns the room keypad
@@ -2622,7 +2640,7 @@ class NightmareGame {
                 this.showSlidingPuzzle(() => {
                     this.addProgress('clear_puzzle');
                     this.loop2_puzzles.room = true;
-                    this.showDialogue('……パズルが完成した。<br>これは、昔うちで飼っていた……ポロだ。', () => {
+                    this.showDialogue('……パズルが完成した。<br>これは……ポロだ。', () => {
                         this.checkLoop2Progression();
                     });
                 });
@@ -2657,30 +2675,22 @@ class NightmareGame {
         }
         else if (target.name === 'LOOP4_LIVING_MEMORY') {
             if (this.loopCount === 4 && !this.loop4_memories.living_room) {
-                this.addProgress('memory_2');
+                this.addProgress('memory_living');
                 this.loop4_memories.living_room = true;
                 this.loop4_memory_count++;
-                this.showDialogue('……温かい笑い声。でも、どこか無理をしているような。', () => {
-                    this.showDialogue('一番悲しかったはずのお父さんとお母さんが、一番必死に笑っていた場所だ。', () => {
-                        this.showDialogue('あの子がいない世界を、普通の世界として僕たちに見せるために。', () => {
-                            this.showDialogue('その静かな決意と悲しみが、この場所にずっと残っている気がする。', () => {
-                                this.triggerGlitch(200);
-                                this.updateObjective('記憶を辿る (' + this.loop4_memory_count + '/2)');
-
-                                // Proposal 1: Whisper of "Onii-chan"
-                                setTimeout(() => {
-                                    this.showDialogue('（……おにいちゃん、あそぼ……）', () => {
-                                        this.showDialogue('……お兄ちゃん？ 僕は、お姉ちゃんの弟だ。', () => {
-                                            this.showDialogue('僕を『お兄ちゃん』って呼ぶ子なんて、うちにはいないのに……。', () => {
-                                                // もしこれが3つ目の記憶なら、姉の部屋へ誘導する
-                                                if (this.loop4_memory_count >= 3) {
-                                                    this.updateObjective('お姉ちゃんの部屋にあった「あの絵」を確かめる');
-                                                }
-                                            });
+                this.showDialogue('青い光に触れると、頭の中に昔の光景が浮かんできた。', () => {
+                    this.showDialogue('……テレビの音。お父さんとお母さんの笑い声。', () => {
+                        this.showDialogue('でも……二人とも、どうしてあんなに悲しそうな顔で笑っていたんだろう。', () => {
+                            this.triggerGlitch(200);
+                            setTimeout(() => {
+                                this.showDialogue('（……おにいちゃん、あそぼ……）', () => {
+                                    this.showDialogue('……え？ お兄ちゃん？ 僕は、お姉ちゃんの弟だ。', () => {
+                                        this.showDialogue('僕を『お兄ちゃん』って呼ぶ子なんて、うちにはいないのに……。', () => {
+                                            this.checkLoop4Memories();
                                         });
                                     });
-                                }, 1500);
-                            });
+                                });
+                            }, 1000);
                         });
                     });
                 });
@@ -2692,7 +2702,7 @@ class NightmareGame {
             if (this.loopCount >= 6) {
                 this.showDialogue('お母さんの字。<br>「捨てなきゃいけないのに、どうしても捨てられない」<br>……お母さんも苦しかったんだ。ずっと、ずっと。<br>捨てなくていいよ。忘れなくていいよ。');
             } else {
-                this.showDialogue('……お母さんのメモ？ 字がぐちゃぐちゃだ……。<br>『捨てなきゃいけないのに、どうしても捨てられない』……。何のことだろう。');
+                this.showDialogue('……お母さんの字？<br>『捨てなきゃいけないのに、どうしても捨てられない』……。何のことだろう。');
             }
         }
         else if (target.name === 'FATHER_MEMO') {
@@ -2722,7 +2732,7 @@ class NightmareGame {
                 this.showDialogue('……お姉ちゃんの日記帳だ。少しだけ、中を見てみよう……。', () => {
                     this.showDialogue('「小さいころとても泣いてた気がする。<br>弟はボーっとしてるだけ。<br>おかあさんとおとうさんも泣いていて…なんで泣いたんだろう」', () => {
                         const nextStep = () => {
-                            this.showDialogue('……あれ？ さっき見た時は、こんなこと書いてなかったはずなのに。', () => {
+                            this.showDialogue('……あれ？ さっき見た時は、こんなこと書いてなかったのに。', () => {
                                 this.showDialogue('「その日のちょっと前までは、よく分からないけど、私すごく喜んでいた気がする。<br>お母さんと一緒にいる時間が長かったのもうれしかった」', () => {
                                     this.loop2_puzzles.diary = true;
                                     this.checkLoop2Progression();
@@ -2731,7 +2741,7 @@ class NightmareGame {
                         };
 
                         if (this.hasCheckedEntranceKeypad) {
-                            this.showDialogue('……日記の一番最後に、走り書きがある。<br>「10月14日」', nextStep);
+                            this.showDialogue('……日記の一番最後に、日付が書いてある。<br>「10月14日」', nextStep);
                         } else {
                             // In loop 2, if keypad not checked, just end here
                         }
@@ -2844,61 +2854,37 @@ class NightmareGame {
             photoImg.src = './creepy.png';
         }
 
-        // ▼ 絵の裏を読む（クリアフラグ）の共通処理
-        const readBackOfPicture = () => {
-            this.addProgress('read_picture_back');
-            this.showDialogue('何かに導かれるように、僕はその絵を裏返してみた。', () => {
-                this.showDialogue('そこには、クレヨンでたどたどしい字が書かれていた。', () => {
-                    this.showDialogue('『はやくあいたいな。わたしの、かわいい いもうと』', () => {
-                        this.showDialogue('『きっと、お兄ちゃんをいっぱい驚かせるような、いたずらっ子になるんだろうな』', () => {
-                            this.showDialogue('……僕には、妹ができるはずだったんだ。', () => {
-                                this.updateObjective('真実を受け入れ、外へ出る');
-                                this.canExitHouse = true; // 脱出可能になる
-                                this.triggerGlitch(300);
-                                this.closePhotoView();
-                            });
-                        });
-                    });
-                });
-            });
-        };
-
         if (this.loopCount === 4) {
             if (!this.loop4_memories.sister_room) {
-                this.addProgress('memory_1');
-                // 1回目の調査：絵の表を見て違和感に気づく（記憶1つ目回収）
+                this.addProgress('memory_sister');
                 this.loop4_memories.sister_room = true;
-                this.loop4_memory_count++;
-                this.showDialogue('…………。', () => {
-                    this.showDialogue('これは……お姉ちゃんが描いた家族の絵だ。', () => {
-                        this.showDialogue('……あれ？ お父さん、お母さん、お姉ちゃんと僕……', () => {
-                            this.showDialogue('……そして、もう一人「知らない女の子」が描かれている。', () => {
-                                this.showDialogue('「二人きりのきょうだい」だと思ってた。でも……僕には、妹がいたの？', () => {
-                                    this.triggerGlitch(200);
-                                    this.updateObjective('記憶を辿る (' + this.loop4_memory_count + '/3)');
 
-                                    // ★追加：もしこれが3つ目（最後）の記憶なら、そのまま裏面を読む
-                                    if (this.loop4_memory_count >= 3) {
-                                        this.showDialogue('……待てよ。この絵の裏に、何か書かれている。', () => {
-                                            readBackOfPicture();
+                this.showDialogue('床に、絵が落ちている。', () => {
+                    this.showDialogue('これは……お姉ちゃんが描いた家族の絵だ。', () => {
+                        this.showDialogue('お父さん、お母さん、お姉ちゃんと僕……そして、もう一人『知らない女の子』が描かれている。', () => {
+                            this.showDialogue('二人きりのきょうだいだと思ってた。でも……あの声、あのベビー服……僕には、妹がいたの？', () => {
+                                this.triggerGlitch(200);
+                                this.showDialogue('何かに導かれるように、僕はその絵を裏返してみた。', () => {
+                                    this.showDialogue('そこには、クレヨンでたどたどしい字が書かれていた。', () => {
+                                        this.showDialogue('『はやくあいたいな。わたしの、かわいい いもうと』', () => {
+                                            this.showDialogue('『きっと、お兄ちゃんをいっぱい驚かせるような、いたずらっ子になるんだろうな』', () => {
+                                                this.showDialogue('……僕には、妹ができるはずだったんだ。', () => {
+                                                    this.updateObjective('真実を受け入れ、外へ出る');
+                                                    this.canExitHouse = true; // 脱出可能になる
+                                                    this.triggerGlitch(300);
+                                                    this.closePhotoView();
+                                                });
+                                            });
                                         });
-                                    } else {
-                                        this.closePhotoView();
-                                    }
+                                    });
                                 });
                             });
                         });
                     });
                 });
-            } else if (this.loop4_memory_count < 3) {
-                // すでに表は見たが、まだ1階の光や親の部屋の箱を見ていない場合
-                this.showDialogue('……まだ、この絵の真実と向き合う勇気が出ない。<br>もっと、思い出さないといけないことがあるはずだ。', () => {
-                    this.closePhotoView();
-                });
             } else {
-                // 1階の記憶を後から集めて、もう一度絵を調べに来た場合
                 this.showDialogue('……さっきの絵だ。', () => {
-                    readBackOfPicture();
+                    this.closePhotoView();
                 });
             }
         }
@@ -2921,8 +2907,8 @@ class NightmareGame {
 
         // 4周目以降はこのセリフを出さないようにする
         if (this.loopCount < 4) {
-            this.updateObjective("幸せな記憶…？");
-            this.showDialogue("僕とお姉ちゃんと…お母さんと手をつないでいるのは誰だろう？");
+            this.updateObjective("不気味な絵");
+            this.showDialogue("……なんだこれ。ぐちゃぐちゃに黒く塗りつぶされてる。<br>それに、お母さんと手をつないでるこの気味の悪い子は……誰だろう。");
         }
     }
 
@@ -3408,6 +3394,17 @@ class NightmareGame {
 
                     setTimeout(() => {
                         this.scene.remove(swarmGroup);
+
+                        // ★追加：残ってしまった家と赤い道を確実に消去する
+                        if (this.redLineGroup) {
+                            this.scene.remove(this.redLineGroup);
+                            this.redLineGroup = null;
+                        }
+                        if (this.flatWorldHouseGroup) {
+                            this.scene.remove(this.flatWorldHouseGroup);
+                            this.flatWorldHouseGroup = null;
+                        }
+
                         if (this.soundAssets.chase) this.soundAssets.chase.pause();
 
                         // 1週目のBGM(ambient)を止め、5周目の雨の音(rain)を再生
@@ -3459,6 +3456,7 @@ class NightmareGame {
                     redLineGroup.rotation.y = this.player.rotation.y;
                     redLineGroup.add(redLine);
                     this.scene.add(redLineGroup);
+                    this.redLineGroup = redLineGroup; // ★追加：消すための記憶を持たせる
 
                     const hGroup = new THREE.Group();
                     const hMat = new THREE.MeshBasicMaterial({ color: 0x221111 });
@@ -4183,7 +4181,11 @@ class NightmareGame {
         if (this.currentFloor === 1 && this.loopCount === 3
             && !this.loop3_1f_cinematic_triggered
             && this.player.position.z < -7) {
-            this.triggerLoop3ChaseCinematic();
+
+            // X座標が廊下の範囲内（98〜102）にいる時だけ発生させる
+            if (this.player.position.x > 98 && this.player.position.x < 102) {
+                this.triggerLoop3ChaseCinematic();
+            }
         }
 
         // 第2周：2階左の部屋に入った時の異変イベント
@@ -4347,18 +4349,15 @@ class NightmareGame {
                     this.loop4_shadows.splice(i, 1);
 
                     if (shadow.shadowName === 'SHADOW_STAIRS') {
-                        this.showDialogue('……あ、あれ？ 今何かいなかった……？');
-                        // 次の影を配置：姉の部屋の中 (2F)
-                        setTimeout(() => this.spawnSisterShadow(10, -10, 'SHADOW_SISTER_ROOM'), 800);
-
-                    } else if (shadow.shadowName === 'SHADOW_SISTER_ROOM') {
-                        this.showDialogue('…！今布団の上に誰かいた！');
+                        this.showDialogue('……あ、あれ？ 今何かいなかった……？', () => {
+                            this.showDialogue('1階の方へ降りて行った気がする……。');
+                        });
                         // 次の影：1Fの階段下付近
                         setTimeout(() => this.spawnSisterShadow(100, 6, 'SHADOW_1F_HALL'), 800);
 
                     } else if (shadow.shadowName === 'SHADOW_1F_HALL') {
-                        this.showDialogue('……あ！いる！');
-                        // 次の影：リビングの入り口付近(1F)
+                        this.showDialogue('…！やっぱり、誰かいる！');
+                        // 次の影：リビングの入り口付近
                         setTimeout(() => this.spawnSisterShadow(104, 2, 'SHADOW_LIVING'), 800);
 
                     } else if (shadow.shadowName === 'SHADOW_LIVING') {
