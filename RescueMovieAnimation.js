@@ -120,7 +120,6 @@ export function playRescueMovieSequence(game) {
 
             if (elapsed > 1.0) {
                 phase = 4; // 終了
-                game.isCinematicPlaying = false;
                 if (game.soundAssets.chase) game.soundAssets.chase.pause();
 
                 // ムービー用のセット（床、妹、ポロ、敵）を全てお片付け
@@ -141,6 +140,7 @@ export function playRescueMovieSequence(game) {
                                     fader.style.opacity = '1';
 
                                     setTimeout(() => {
+                                        game.isCinematicPlaying = false;
                                         game.loopCount = 5; // 次のループ（第6周）へ
                                         game.loopToStart();
                                     }, 3500);

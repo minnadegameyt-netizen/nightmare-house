@@ -49,6 +49,9 @@ class NightmareGame {
         this.lastChoiceTime = 0; // 追加：入力重複防止用タイマー
         this.lastDialogueCloseTime = 0; // 追加：ダイアログ閉了後の再判定防止タイマー
         this.loop5_toilet_warning_triggered = false; // 追加：5周目トイレ回廊メッセージ用フラグ
+        this.loop4_blockers = [];
+        this.hasSeenBlockers = false;
+        this.hasSeenStairsWatcher = false;
 
         // Settings State
         this.userBrightness = 1.0;   // プレイヤーが設定した明るさ
@@ -112,7 +115,10 @@ class NightmareGame {
             { id: 'bark', path: './audio/bark.mp3' },
             { id: 'slap', path: './audio/slap.mp3' },
             { id: 'heartbeat', path: './audio/heartbeat.mp3' },
-            { id: 'puzzle_clear', path: './audio/puzzle_clear.mp3' }
+            { id: 'puzzle_clear', path: './audio/puzzle_clear.mp3' },
+            { id: 'noise_rush', path: './audio/noise_rush.mp3' },
+            { id: 'heavy_hit', path: './audio/heavy_hit.mp3' },
+            { id: 'monster_roar', path: './audio/monster_roar.mp3' }
         ];
 
         const imageFiles = [
@@ -450,20 +456,12 @@ class NightmareGame {
         marker.style.top = `${top}%`;
     }
 
+    // setSceneBrightnessを呼び出す
     adjustBrightness(factor) {
-        this.brightness = factor;
-        this.allLights.forEach(lightData => {
-            lightData.light.intensity = lightData.baseIntensity * factor;
-        });
+        this.setSceneBrightness(factor);
+    }
 
-        // Also adjust background/fog slightly for better feel
-        const baseColor = 0x050505;
-        const c = new THREE.Color(baseColor).multiplyScalar(factor);
-        this.scene.background = c;
-        if (this.scene.fog) {
-            this.scene.fog.color = c;
-        }
-    } setSceneBrightness(factor) {
+    setSceneBrightness(factor) {
         this.sceneBrightness = factor;
         this.applyBrightness();
     }
@@ -774,6 +772,10 @@ class NightmareGame {
     loopToStart() {
         if (this.swarmAnim) clearInterval(this.swarmAnim); // ★追加：チェイスタイマーを確実に消す
 
+        this.hasSeenBlockers = false;
+        this.hasSeenStairsWatcher = false;
+        this.loop4_blockers = [];
+
         const fader = this.createFader();
         fader.style.opacity = '1';
         this.gameState = 'FADING';
@@ -824,6 +826,11 @@ class NightmareGame {
                 this.renderMap();
             }
 
+            // ループごとに霧の濃さを通常(0.05)にリセット
+            if (this.scene.fog) {
+                this.scene.fog.density = 0.05;
+            }
+
             // Apply specific loop environmental changes
             this.applyLoopState();
 
@@ -853,7 +860,7 @@ class NightmareGame {
                     // 1つ目のテキスト
                     this.showDialogue('……はぁ、はぁっ…。', () => {
                         // スペースを押したら2つ目を表示
-                        this.showDialogue('……！やっ、やっぱりそうだ！<br>夢だ！僕はループしてるんだ！', () => {
+                        this.showDialogue('……！やっ、やっぱりそうだ！<br>ここはいつもの世界じゃないんだ！', () => {
                             // さらにスペースを押したら3つ目を表示
                             this.showDialogue('なんだったんだ、さっきの化け物は…！', () => {
                                 // 最後にこれを表示して終わる
@@ -863,16 +870,10 @@ class NightmareGame {
                     });
                 } else if (this.loopCount === 5) {
                     this.updateObjective('歪んだ世界で、あの子を探す');
-                    this.showDialogue('……また、この部屋だ。', () => {
-                        this.showDialogue('でも、もう今までとは違う。もうここが現実じゃないことは分かっている…。', () => {
-                            this.showDialogue('部屋中から、強い雨の匂いがする。<br>……思い出した。あの日、ひどく冷たい雨が降っていたんだ。', () => {
-                                this.showDialogue('お母さんが泣き崩れて、お父さんが何も言えずに立ち尽くしていた日。<br>僕がずっと「なかったこと」にして、逃げ続けていた日。', () => {
-                                    this.showDialogue('この崩壊した赤黒い世界は、生まれてこれなかった「あの子」の悲しみそのものなんだ。', () => {
-                                        this.showDialogue('……ずっと無視してごめん。怖がってごめんね。', () => {
-                                            this.showDialogue('終わらせに行こう。僕を呼んでいる、あの子のところへ。');
-                                        });
-                                    });
-                                });
+                    this.showDialogue('……また、この部屋だ。でも……何かが違う。', () => {
+                        this.showDialogue('部屋中から、ひどく強い雨の匂いがする……。', () => {
+                            this.showDialogue('……胸が苦しい。この崩壊した赤黒い世界は、もしかして……', () => {
+                                this.showDialogue('生まれてこれなかった『あの子』の、ずっと抑え込んでいた悲しみそのものなの……？');
                             });
                         });
                     });
@@ -965,14 +966,16 @@ class NightmareGame {
             this.isSisterDoorOpen = true;
 
             // 演出：2F左の部屋の家具を浮遊させる
-            if (this.mapTable) this.mapTable.isFloating = true;
-            if (this.lrChair) {
-                this.lrChair.isFloating = true;
-                this.lrChair.rotation.z = 0.2;
-            }
-            if (this.lrCabinet) {
-                this.lrCabinet.isFloating = true;
-                this.lrCabinet.rotation.x = 0.1;
+            if (this.loopCount < 6) {
+                if (this.mapTable) this.mapTable.isFloating = true;
+                if (this.lrChair) {
+                    this.lrChair.isFloating = true;
+                    this.lrChair.rotation.z = 0.2;
+                }
+                if (this.lrCabinet) {
+                    this.lrCabinet.isFloating = true;
+                    this.lrCabinet.rotation.x = 0.1;
+                }
             }
 
             // Spawn Puzzles for Loop 2
@@ -1103,6 +1106,23 @@ class NightmareGame {
         this.mapRoot.add(memorySphere);
 
         this.interactables.push({ obj: memorySphere, name: 'LOOP4_LIVING_MEMORY', x: oXL + 11, z: 2 });
+
+        const loader = new THREE.TextureLoader();
+        loader.load('./images/creepy_entity.png', (tex) => {
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.5, color: 0x111111 }); // 真っ黒にする
+            const positions = [
+                { x: oXL + 11.5, z: 2.5 },
+                { x: oXL + 10.5, z: 2.5 },
+                { x: oXL + 11, z: 1.2 }
+            ];
+            positions.forEach(pos => {
+                const s = new THREE.Sprite(mat.clone());
+                s.scale.set(2, 3, 1);
+                s.position.set(pos.x, -8.5, pos.z);
+                this.mapRoot.add(s);
+                this.loop4_blockers.push(s);
+            });
+        });
     }
 
     checkLoop4Memories() {
@@ -1851,6 +1871,17 @@ class NightmareGame {
         voidMesh.position.set(0, 2.5, -21);
         this.mapRoot.add(voidMesh);
 
+        if (this.loopCount < 3) {
+            const loader = new THREE.TextureLoader();
+            loader.load('./images/creepy_entity.png', (tex) => {
+                const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, alphaTest: 0.5, opacity: 0.25, color: 0x111111 });
+                this.stairsWatcher = new THREE.Sprite(mat);
+                this.stairsWatcher.scale.set(3, 4, 1);
+                this.stairsWatcher.position.set(0, 1.4, -20.6); // 暗闇の手前
+                this.mapRoot.add(this.stairsWatcher);
+            });
+        }
+
         // --- Sister's Room Furniture ---
         const sisterBed = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.6, 4), new THREE.MeshStandardMaterial({ color: 0x331122 }));
         sisterBed.position.set(10, 0.3, -10);
@@ -2246,7 +2277,7 @@ class NightmareGame {
                             text: '押す', action: () => {
                                 this.addProgress('push_fridge_btn');
                                 this.loop4_fridge_checked = true;
-                                this.soundAssets.door_open.play();
+                                this.soundAssets.toilet.play();
                                 this.triggerGlitch(500);
                                 this.showDialogue('「ゴゴゴ……」と家全体が低く唸るような嫌な音がした。', () => {
                                     // 古いマップを完全に消去してから再生成し、浮遊状態などを再適用する
@@ -2546,18 +2577,24 @@ class NightmareGame {
             if (this.canExitHouse) {
                 if (this.loopCount === 1) this.addProgress('escape_loop1');
                 if (this.loopCount === 2) this.addProgress('escape_loop2');
-                if (this.loopCount === 4) this.addProgress('escape_loop4');
                 if (this.soundAssets.door_open) {
                     this.soundAssets.door_open.currentTime = 0;
                     this.soundAssets.door_open.play().catch(e => { });
                 }
-                this.showDialogue('……扉が開いた。外の空気が、雨の匂いがする。', () => {
-                    // 脱出直前の予兆演出
-                    this.triggerGlitch(500);
-                    setTimeout(() => {
-                        this.loopToStart();
-                    }, 500);
-                });
+                if (this.loopCount === 4) {
+                    this.addProgress('escape_loop4');
+                    this.showDialogue('……扉が開いた。', () => {
+                        this.playLoop4To5Transition();
+                    });
+                } else {
+                    this.showDialogue('……扉が開いた。外の空気が、雨の匂いがする。', () => {
+                        // 脱出直前の予兆演出
+                        this.triggerGlitch(500);
+                        setTimeout(() => {
+                            this.loopToStart();
+                        }, 500);
+                    });
+                }
             } else if (this.loopCount === 4) {
                 this.showDialogue('……扉は開くはずなのに、なぜか手が動かない。', () => {
                     this.showDialogue('まだ、何かを忘れている気がする。この家の中に、僕が向き合わなければならない何かが。');
@@ -2908,7 +2945,7 @@ class NightmareGame {
         // 4周目以降はこのセリフを出さないようにする
         if (this.loopCount < 4) {
             this.updateObjective("不気味な絵");
-            this.showDialogue("……なんだこれ。ぐちゃぐちゃに黒く塗りつぶされてる。<br>それに、お母さんと手をつないでるこの気味の悪い子は……誰だろう。");
+            this.showDialogue("……なんだこれ。家族の絵…？。<br>でも、僕の家4人しかいないし、お母さんと手をつないでるこの気味の悪い子は……誰だろう。");
         }
     }
 
@@ -2931,7 +2968,7 @@ class NightmareGame {
         this.addProgress('open_left_room');
         this.isLeftRoomOpen = true;
         this.isRightRoomOpen = true; // Secretly open right room too
-        this.updateObjective("お姉ちゃんの部屋を調べる");
+        this.updateObjective("開いた部屋を調べる");
 
         this.soundAssets.door_open.play();
 
@@ -3070,7 +3107,7 @@ class NightmareGame {
                         this.isCinematicPlaying = false;
                         this.canExitHouse = true;
                         this.gameState = 'PLAYING';
-                        this.updateObjective('一階の玄関から、この家を出る');
+                        this.updateObjective('開いた扉から廊下へ出る');
 
                         // Re-open the left door and release collision gap so the player can escape
                         this.is2FLeftRoomTrapped = false;
@@ -4177,6 +4214,24 @@ class NightmareGame {
 
         this.camera.lookAt(this.player.position);
 
+        if (this.currentFloor === 2 && this.stairsWatcher && !this.hasSeenStairsWatcher) {
+            const dist = Math.hypot(this.player.position.x - this.stairsWatcher.position.x, this.player.position.z - this.stairsWatcher.position.z);
+            // プレイヤーが近づいたらゆっくり消える
+            if (dist < 7.0) {
+                this.hasSeenStairsWatcher = true;
+                let op = 0.25;
+                const fade = setInterval(() => {
+                    op -= 0.02;
+                    this.stairsWatcher.material.opacity = op;
+                    if (op <= 0) {
+                        clearInterval(fade);
+                        this.mapRoot.remove(this.stairsWatcher);
+                        this.stairsWatcher = null;
+                    }
+                }, 50);
+            }
+        }
+
         // Loop 3: Trigger corridor chase cinematic when player passes toward the junction area
         if (this.currentFloor === 1 && this.loopCount === 3
             && !this.loop3_1f_cinematic_triggered
@@ -4283,6 +4338,7 @@ class NightmareGame {
         this.updatePlayerAndCamera();
         this.updateMonster();
         this.updateSisterShadows();
+        if (this.checkLoop4Blockers) this.checkLoop4Blockers();
         this.updateFloatingObjects();
         this.checkInteractions();
         this.updateMapMarker();
@@ -4294,6 +4350,44 @@ class NightmareGame {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    checkLoop4Blockers() {
+        if (this.loopCount !== 4 || !this.loop4_blockers || this.loop4_blockers.length === 0) return;
+
+        const blocker = this.loop4_blockers[0];
+
+        if (Math.abs(this.player.position.y - blocker.position.y) < 4.0) {
+            const dist = Math.hypot(this.player.position.x - blocker.position.x, this.player.position.z - blocker.position.z);
+
+            if (dist < 4.5 && !this.hasSeenBlockers && this.gameState === 'PLAYING') {
+                this.hasSeenBlockers = true;
+
+                this.keys = { w: false, a: false, s: false, d: false, space: false };
+                if (this.soundAssets.footstep) this.soundAssets.footstep.pause();
+
+                this.triggerGlitch(500);
+                if (this.soundAssets.thud) this.soundAssets.thud.play();
+
+                this.loop4_blockers.forEach(b => {
+                    b.material.color.setHex(0xff0000);
+                    setTimeout(() => {
+                        this.mapRoot.remove(b);
+                    }, 200);
+                });
+                this.loop4_blockers = [];
+
+                setTimeout(() => {
+                    this.showDialogue('……光の玉の周りに群がっていた黒い影たちが、ノイズと共に弾け飛んだ。', () => {
+                        this.showDialogue('あいつら……お姉ちゃんじゃない。もっと、おぞましい何かだ。', () => {
+                            this.showDialogue('この家を外から侵食して、僕が思い出すのを『妨害』しようとしていた……？', () => {
+                                this.showDialogue('……本当は、お姉ちゃんは僕をあいつらから守ろうとしてくれていたの……？');
+                            });
+                        });
+                    });
+                }, 500);
+            }
+        }
     }
 
     updateFloatingObjects() {
@@ -4521,6 +4615,131 @@ class NightmareGame {
             });
         }, 1000);
     }
+
+    playLoop4To5Transition() {
+        this.gameState = 'EVENT';
+        this.isCinematicPlaying = true;
+
+        // BGMや足音を一旦停止
+        if (this.soundAssets.ambient) this.soundAssets.ambient.pause();
+        if (this.soundAssets.footstep) this.soundAssets.footstep.pause();
+
+        // 画面を暗転させる
+        const fader = this.createFader();
+        fader.style.transition = 'opacity 0.5s ease-in-out';
+        fader.style.opacity = '1';
+
+        setTimeout(() => {
+            // 完全な暗黒空間（遥か地下）へカメラとプレイヤーを移動
+            this.mapRoot.clear();
+            this.scene.background = new THREE.Color(0x000000);
+            if (this.scene.fog) {
+                this.scene.fog.color.setHex(0x000000);
+                this.scene.fog.density = 0.05; // 霧を濃くして奥を見えなくする
+            }
+
+            const voidX = 0, voidY = -500, voidZ = 0;
+            this.player.position.set(voidX, voidY, voidZ);
+            this.camera.position.set(voidX, voidY + 2, voidZ + 5);
+            this.camera.lookAt(voidX, voidY + 2, voidZ - 10);
+
+            // 暗転を明けて真っ暗な空間を見せる
+            fader.style.transition = 'opacity 0.1s ease-in-out';
+            fader.style.opacity = '0';
+
+            // 1. ノイズ（敵）の接近
+            const loader = new THREE.TextureLoader();
+            const texEnemy = loader.load('./images/creepy_entity.png');
+            // 真っ黒なノイズスプライト
+            const matEnemy = new THREE.SpriteMaterial({ map: texEnemy, transparent: true, alphaTest: 0.5, color: 0x111111 });
+            const noiseSprite = new THREE.Sprite(matEnemy);
+            noiseSprite.scale.set(3, 4, 1);
+            noiseSprite.position.set(voidX, voidY + 2, voidZ - 20); // 奥から来る
+            this.scene.add(noiseSprite);
+
+            // ノイズ音再生
+            if (this.soundAssets.noise_rush) {
+                this.soundAssets.noise_rush.currentTime = 0;
+                this.soundAssets.noise_rush.play().catch(e => { });
+            }
+
+            let elapsed = 0;
+            let phase = 0;
+            let sisterSprite = null;
+
+            const anim = setInterval(() => {
+                elapsed += 0.016;
+
+                if (phase === 0) {
+                    // ノイズが猛スピードで迫ってくる
+                    noiseSprite.position.z += 0.4;
+                    noiseSprite.scale.set(3 + elapsed * 2, 4 + elapsed * 2, 1);
+
+                    // ギリギリまで迫ったら妹乱入
+                    if (noiseSprite.position.z > voidZ - 4) {
+                        phase = 1;
+
+                        // 妹（化け物）登場
+                        const texSister = loader.load('./images/sister_monster.png');
+                        const matSister = new THREE.SpriteMaterial({ map: texSister, transparent: true, alphaTest: 0.5 });
+                        sisterSprite = new THREE.Sprite(matSister);
+                        sisterSprite.scale.set(4.5, 6.5, 1);
+
+                        // 画面右側からタックルするように配置
+                        sisterSprite.position.set(voidX + 8, voidY + 2, voidZ - 3);
+                        this.scene.add(sisterSprite);
+
+                        // 衝突音と咆哮を同時に再生
+                        if (this.soundAssets.heavy_hit) this.soundAssets.heavy_hit.play().catch(e => { });
+                        if (this.soundAssets.monster_roar) this.soundAssets.monster_roar.play().catch(e => { });
+
+                        this.triggerGlitch(200);
+                    }
+                } else if (phase === 1) {
+                    // 妹が横から体当たり、ノイズは左奥へ吹き飛ぶ
+                    sisterSprite.position.x -= 0.8; // 左へ猛スピードでスライド
+
+                    if (sisterSprite.position.x < voidX + 0.5) {
+                        // 衝突位置付近で妹ストップ、ノイズが吹き飛ぶ
+                        noiseSprite.position.x -= 1.0;
+                        noiseSprite.position.z -= 0.5;
+                        noiseSprite.material.opacity -= 0.05; // 吹き飛びながらフェードアウト
+
+                        sisterSprite.position.x = voidX + 0.5; // 少し右寄りでストップ
+
+                        // ノイズが消えたらフェーズ移行
+                        if (noiseSprite.material.opacity <= 0) {
+                            this.scene.remove(noiseSprite);
+                            phase = 2;
+                            elapsed = 0; // タイマーリセット
+                        }
+                    } else {
+                        // 衝突の瞬間だけ少しノイズも押される
+                        noiseSprite.position.x -= 0.2;
+                    }
+                } else if (phase === 2) {
+                    // 妹がこっちをチラッと見る「間」（約1秒）
+                    if (elapsed > 1.0) {
+                        clearInterval(anim);
+
+                        // バグッ！と画面が消える
+                        this.triggerGlitch(500);
+                        fader.style.transition = 'opacity 0.1s linear';
+                        fader.style.opacity = '1';
+
+                        setTimeout(() => {
+                            this.scene.remove(sisterSprite);
+                            this.isCinematicPlaying = false;
+
+                            // loopToStartを呼ぶと自動で loopCount が 5 に増えて5周目が始まります
+                            this.loopToStart();
+                        }, 600);
+                    }
+                }
+            }, 16);
+        }, 600);
+    }
+
 }
 
 new NightmareGame();
