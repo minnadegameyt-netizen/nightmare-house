@@ -118,6 +118,7 @@ class NightmareGame {
             { id: 'puzzle_clear', path: './audio/puzzle_clear.mp3' },
             { id: 'noise_rush', path: './audio/noise_rush.mp3' },
             { id: 'heavy_hit', path: './audio/heavy_hit.mp3' },
+            { id: 'toilet', path: './audio/toilet.mp3' },
             { id: 'monster_roar', path: './audio/monster_roar.mp3' }
         ];
 
@@ -785,7 +786,9 @@ class NightmareGame {
             this.triggerGlitch(800);
             this.currentFloor = 2;
             this.player.position.set(0, 0, 0);
+            this.player.rotation.set(0, 0, 0);
             this.camera.position.set(0, 6, 6);
+            this.camera.lookAt(this.player.position);
 
             // Rebuild the map to apply architectural changes (like Loop 3 corridor)
             this.refreshMapForLoop();
@@ -871,9 +874,11 @@ class NightmareGame {
                 } else if (this.loopCount === 5) {
                     this.updateObjective('歪んだ世界で、あの子を探す');
                     this.showDialogue('……また、この部屋だ。でも……何かが違う。', () => {
-                        this.showDialogue('部屋中から、ひどく強い雨の匂いがする……。', () => {
-                            this.showDialogue('……胸が苦しい。この崩壊した赤黒い世界は、もしかして……', () => {
-                                this.showDialogue('生まれてこれなかった『あの子』の、ずっと抑え込んでいた悲しみそのものなの……？');
+                        this.showDialogue('さっきの真っ暗な場所で聞こえた声……あれは…', () => {
+                            this.showDialogue('部屋中から、ひどく強い雨の匂いがする……。', () => {
+                                this.showDialogue('……胸が苦しい。この崩壊した赤黒い世界は、もしかして……', () => {
+                                    this.showDialogue('生まれてこれなかった『あの子』の、ずっと抑え込んでいた悲しみそのものなの……？');
+                                });
                             });
                         });
                     });
@@ -3120,7 +3125,7 @@ class NightmareGame {
                             this.doorL2F.position.z -= 0.05; // slide open
                             if (t2 > 1.5) {
                                 clearInterval(openAnim);
-                                this.showDialogue('今誰か廊下にいたよね？');
+                                this.showDialogue('…今誰か廊下にいたよね？');
                             }
                         }, 16);
                     }, 1000);
