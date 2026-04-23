@@ -547,11 +547,16 @@ class NightmareGame {
     addProgress(eventId) {
         if (!this.completedEvents.has(eventId)) {
             this.completedEvents.add(eventId);
-            this.progress += 0.031;
 
-            // エンディング前は 100% を超えないようにストッパーをかける
-            if (this.progress > 99.999 && eventId !== 'talk_sister') {
-                this.progress = 99.999;
+            if (eventId === 'talk_sister') {
+                // 妹に話しかけた瞬間にピッタリ100%にする
+                this.progress = 100.000;
+            } else {
+                this.progress += 0.031;
+                // エンディング前は 100% を超えないようにストッパーをかける
+                if (this.progress > 99.999) {
+                    this.progress = 99.999;
+                }
             }
             this.updateProgressUI();
         }
@@ -845,6 +850,7 @@ class NightmareGame {
                 this.setSceneBrightness(2.0); // Major brightness boost for 2nd Floor
 
                 if (this.loopCount === 3) {
+                    this.updateObjective('……部屋から出る？'); // あえて不穏な目的にする
                     this.showDialogue('……また僕の部屋だ。やっぱり何かおかしい。', () => {
                         if (this.soundAssets.slap) {
                             this.soundAssets.slap.currentTime = 0;
@@ -860,13 +866,9 @@ class NightmareGame {
                     });
                 } else if (this.loopCount === 4) {
                     this.updateObjective('静かな家を歩く');
-                    // 1つ目のテキスト
                     this.showDialogue('……はぁ、はぁっ…。', () => {
-                        // スペースを押したら2つ目を表示
                         this.showDialogue('……！やっ、やっぱりそうだ！<br>ここはいつもの世界じゃないんだ！', () => {
-                            // さらにスペースを押したら3つ目を表示
                             this.showDialogue('なんだったんだ、さっきの化け物は…！', () => {
-                                // 最後にこれを表示して終わる
                                 this.showDialogue('…どうしたら、ここから抜け出すことができるんだよ…！');
                             });
                         });
@@ -883,7 +885,7 @@ class NightmareGame {
                         });
                     });
                 } else if (this.loopCount >= 6) {
-                    this.updateObjective('あの子に会いにいく', 100.000);
+                    this.updateObjective('あの子に会いにいく');
                     this.showDialogue('……静かだ。さっきまでの不気味なノイズも、雨の匂いも消えている。', () => {
                         this.showDialogue('あの時、僕を守ってくれたのは……お姉ちゃんと、ポロ？', () => {
                             this.showDialogue('いや……違う。お姉ちゃんは、あんな姿じゃない。', () => {
@@ -905,8 +907,8 @@ class NightmareGame {
                         this.showDialogue('僕の部屋……？ さっきのは夢だったのかな？');
                     });
                 } else {
+                    this.updateObjective('部屋の扉を開ける方法を探す');
                     this.showDialogue('……？ 僕の部屋……？ さっきのは夢だったのかな？');
-                    this.updateObjective('部屋から出る方法を探す');
                 }
             }, 800);
         }, 2000);
@@ -1019,7 +1021,6 @@ class NightmareGame {
             // Spawn the Nightmare - Only in Loop 3
             if (this.loopCount === 3) {
                 this.spawnMonster();
-                this.updateObjective('追いかけっこ');
             } else {
                 // Ensure monster is removed if NOT in Loop 3
                 if (this.monster) {
@@ -2161,7 +2162,8 @@ class NightmareGame {
                     this.addProgress('get_boy_key');
                     this.soundAssets.item_get.currentTime = 0;
                     this.soundAssets.item_get.play().catch(e => { });
-                    this.updateObjective('鍵を使って、暗い廊下へ出る');
+                    // 「暗い廊下へ」だと先走り感があるので変更
+                    this.updateObjective('鍵を使って、扉を開ける');
                 });
             } else {
                 this.showDialogue('ベッドの下には、もう何もない。');
@@ -2169,7 +2171,7 @@ class NightmareGame {
         }
         else if (target.name === 'BED_SISTER') {
             if (this.loopCount >= 6) {
-                this.showDialogue('お姉ちゃんのベッド……。<br>夢じゃなかったんだ。お姉ちゃん、ずっと隠していたんだね。');
+                this.showDialogue('お姉ちゃんのベッド……。<br>この夢で見せられていたのは、ずっと家に隠されていた『本当の記憶』なんだね。');
             } else if (this.loopCount === 5) {
                 this.showDialogue('お姉ちゃんのベッドが、……浮いてる。<br>雨の匂いが、ここからもする……。');
             } else {
@@ -2272,7 +2274,7 @@ class NightmareGame {
 
         else if (target.name === 'FRIDGE') {
             if (this.loopCount >= 6) {
-                this.showDialogue('冷蔵庫。<br>……一番最初にここを開けた時のこと、もう遠い夢みたいだ。<br>それでも、ここから全部繋がっていたんだな。');
+                this.showDialogue('冷蔵庫。<br>……この悪夢の中で、何度もここを開けた気がする。<br>氷みたいに冷たい空気が、ずっとあの悲しい世界と繋がっていたんだな。');
                 return;
             }
             if (this.loopCount === 5) {
@@ -2397,7 +2399,7 @@ class NightmareGame {
                 this.showDialogue('「ごめん。僕、知らなかったんだ。君のこと……。」', () => {
                     this.showDialogue('「生まれてこれなかった、僕の妹。」', () => {
                         this.showDialogue('「お姉ちゃんが描いた、あの絵の中に……君はいたんだね。」', () => {
-                            this.showDialogue('「あんな怖い姿になってまで、ずっと僕の気を引こうとしてたのか。」', () => {
+                            this.showDialogue('「ずっと暗い場所にいて、……寂しくて、苦しかったんだね。」', () => {
                                 this.showDialogue('「お姉ちゃんが絵に描いた通りだ……君は本当に、ひどい『いたずらっ子』だね。」', () => {
                                     this.showDialogue('「ただ……僕やお姉ちゃんと一緒に、鬼ごっこがしたかっただけなんだね。」', () => {
                                         this.showDialogue('「寂しかったよね。ずっと独りで、こんな暗いところに……。」', () => {
@@ -2462,7 +2464,7 @@ class NightmareGame {
         }
         else if (target.name === 'TOILET') {
             if (this.loopCount >= 6) {
-                this.showDialogue('トイレの扉。<br>……あの夜、ここに来ようとして、全部が始まった。', () => {
+                this.showDialogue('トイレの扉。<br>……夜中に目が覚めてここに来ようとした時から、ずっと長い夢を見ている。', () => {
                     this.showDialogue('あの子が、僕を呼んだのかもしれない。<br>……ありがとう。気づかせてくれて。');
                 });
                 return;
@@ -2807,7 +2809,7 @@ class NightmareGame {
             }
             else if (this.loopCount >= 6) {
                 this.showDialogue('この日記……お姉ちゃんの字。', () => {
-                    this.showDialogue('「小さいころとても泣いてた気がする。弟はボーっとしてるだけ」<br>……お姉ちゃん、こんな小さい頃から感じてたんだ。', () => {
+                    this.showDialogue('「小さいころとても泣いてた気がする。弟はボーっとしてるだけ」<br>……僕がまだ小さくて何もわからなかった頃から、お姉ちゃんは一人で抱え込んでいたんだ。', () => {
                         this.showDialogue('「その日のちょっと前まで、すごく喜んでいた気がする」<br>……あの子が来ることを、お姉ちゃんも楽しみにしてたんだ。', () => {
                             this.showDialogue('「今日があの子の生まれてくるはずだった日。お母さんのしぼんだお腹を見て、弟は不思議そうな顔をしていた。みんな、少しずつあの子のことを話さなくなっていく。でも、私だけはずっと、あの子のことを覚えていようと思う。忘れないよ。絶対に。」');
                         });
@@ -3167,7 +3169,6 @@ class NightmareGame {
             this.currentFloor = 1;
             const oX = 100;
 
-            // Map sync
             if (this.gameState === 'MAP_VIEW') {
                 this.mapViewFloor = 1;
                 this.renderMap();
@@ -3179,7 +3180,15 @@ class NightmareGame {
             setTimeout(() => {
                 fader.style.opacity = '0';
                 this.gameState = 'PLAYING';
-                this.updateObjective('暗闇の廊下を進む');
+
+                // 周回ごとに1階に降りた時のヒントを変える
+                if (this.loopCount === 1) {
+                    this.updateObjective('暗闇の廊下を進む');
+                } else if (this.loopCount === 3) {
+                    this.updateObjective('静まり返った1階を調べる');
+                } else if (this.loopCount >= 6) {
+                    this.updateObjective('あの子の待つ場所へ');
+                }
             }, 500);
         }, 1000);
     }
@@ -3196,12 +3205,10 @@ class NightmareGame {
                 this.renderMap();
             }
 
-            // 1階の箱を開けた後に戻ってきた時、2階の左扉を開ける
             if (this.hasOpenedParentsBox && !this.is2FLeftRoomTrapped) {
                 this.is2FLeftRoomTrapArmed = true;
-                if (this.doorL2F) this.doorL2F.position.z = -14.5; // 扉を開く
+                if (this.doorL2F) this.doorL2F.position.z = -14.5;
 
-                // 当たり判定の扉ブロックを外す
                 this.collisionObjects2F = (this.collisionObjects2F || []).filter(
                     c => !(c[0] === -2.25 && c[1] === -1.75 && c[2] === -13.75 && c[3] === -12.25)
                 );
@@ -3210,9 +3217,14 @@ class NightmareGame {
             this.player.position.set(0, 0, -18.5);
             this.camera.position.set(0, 6, -12.5);
             this.gameState = 'PLAYING';
-            this.updateObjective('物音の正体を確かめる');
 
-            // 第2周：テンキー解錠後に2階へ戻った際、独白を表示
+            // 周回ごとに2階に戻った時のヒントを変える
+            if (this.loopCount === 1) {
+                this.updateObjective('物音の正体を確かめる');
+            } else if (this.loopCount === 2 && this.loop2_puzzles.entrance) {
+                this.updateObjective('2階から聞こえた物音を確かめる');
+            }
+
             if (this.loopCount === 2 && this.loop2_puzzles.entrance && !this.hasShownPostKeypad2FDialogue) {
                 this.hasShownPostKeypad2FDialogue = true;
                 this.showDialogue('……やっぱり、何かおかしい。みんな家にいないし、家から出られない…。', () => {
@@ -4294,7 +4306,12 @@ class NightmareGame {
 
                 this.showDialogue('（……おにいちゃん、その先には行っちゃだめ……）', () => {
                     this.showDialogue('……', () => {
-                        this.showDialogue('あれ…？今何か聞こえたような…');
+                        this.showDialogue('あれ…？今何か聞こえたような…', () => {
+                            // ▼ 追加：ダイアログ終了後に心音を止める ▼
+                            if (this.soundAssets.heartbeat) {
+                                this.soundAssets.heartbeat.pause();
+                            }
+                        });
                     });
                 });
             }
@@ -4579,9 +4596,10 @@ class NightmareGame {
                         this.showDialogue('…………パチッ。<br>眩しい光。カーテンの隙間から、朝の太陽が差し込んでいる。', () => {
                             this.showDialogue('「……おはよ。また変な夢でも見たの？」<br>お姉ちゃんの声がした。', () => {
                                 this.showDialogue('僕は夢の話をした。<br>お姉ちゃんの部屋の押し入れの奥……そこに、隠された絵があることを。', () => {
-                                    this.showDialogue('お姉ちゃんは不思議そうな顔をしながら、押し入れの奥にある古い箱を引っ張り出してきた。', () => {
-                                        this.showDialogue('「……嘘。こんなの、あったんだ。私、全然覚えてない……」', () => {
-                                            this.showDialogue('箱の中から出てきたのは、紛れもなくお姉ちゃんが描いた一枚の絵。', () => {
+                                    // 修正：お姉ちゃんが忘れていたのではなく、隠していた設定にする
+                                    this.showDialogue('お姉ちゃんは少し驚いた顔をしたあと、黙って押し入れの奥から古い箱を引っ張り出してきた。', () => {
+                                        this.showDialogue('「……お母さんたちが悲しむから、ずっと秘密にしてたんだけどね」', () => {
+                                            this.showDialogue('箱の中から出てきたのは、紛れもなくお姉ちゃんが昔描いた一枚の絵。', () => {
                                                 this.showDialogue('そこには、今の家族と……<br>見たこともない小さな女の子、そしてポロが、みんなで幸せそうに笑っている絵があった。', () => {
                                                     this.showDialogue('……夢の中で見たのと同じだ。', () => {
                                                         this.showDialogue('物音に気づき、お父さんとお母さんが部屋に入ってきた。', () => {
@@ -4702,6 +4720,11 @@ class NightmareGame {
                                                                     clearInterval(chaosAnim);
                                                                     this.scene.remove(chaosLight);
                                                                     if (this.soundAssets.heartbeat) this.soundAssets.heartbeat.pause();
+
+                                                                    if (this.soundAssets.noise_rush) {
+                                                                        this.soundAssets.noise_rush.pause();
+                                                                        this.soundAssets.noise_rush.currentTime = 0;
+                                                                    }
 
                                                                     fader.style.transition = 'opacity 0.2s ease-in';
                                                                     fader.style.backgroundColor = '#000';
