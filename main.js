@@ -920,12 +920,8 @@ class NightmareGame {
         // Clear all meshes in mapRoot
         this.mapRoot.clear();
 
-        // Reset lights list (keeping only persistent ones if desired)
-        this.allLights = [];
-
-        // Re-add persistent lights with increased base intensity
-        this.addLight(new THREE.AmbientLight(0x404050, 1.8), 1.8, true);
-        this.addLight(this.pointLight, 4.5, true);
+        // 常時配置されているメインライト2つだけを残してリストをリセット（重複増殖バグを防止）
+        this.allLights = this.allLights.filter(l => l.light === this.ambientLight || l.light === this.pointLight);
 
         // Reset interactables and collision
         this.interactables = [];
@@ -1655,10 +1651,17 @@ class NightmareGame {
     }
 
     setupLights() {
-        // We will call addLight in refreshMapForLoop, so here we mostly initialize
         this.pointLight = new THREE.PointLight(0xffeedd, 2.2, 25);
         this.pointLight.position.set(0, 4, 0);
         this.pointLight.castShadow = true;
+
+        // 1周目から2周目と同等の明るさになるよう、強度を2倍(1.8→3.6, 4.5→9.0)に設定
+        this.ambientLight = new THREE.AmbientLight(0x404050, 3.6);
+        this.scene.add(this.ambientLight);
+        this.scene.add(this.pointLight);
+
+        this.allLights.push({ light: this.ambientLight, baseIntensity: 3.6 });
+        this.allLights.push({ light: this.pointLight, baseIntensity: 9.0 });
     }
 
     createMap() {
@@ -1968,10 +1971,6 @@ class NightmareGame {
 
         // Pre-build 1st floor meshes and collision (invisible until teleport)
         this.buildFirstFloor();
-
-        // Add 2F lights for the first loop (Loop 1)
-        this.addLight(new THREE.AmbientLight(0x404050, 1.8), 1.8, true);
-        this.addLight(this.pointLight, 4.5, true);
     }
 
     createPlayer() {
@@ -3788,13 +3787,13 @@ class NightmareGame {
         this.mapRoot.add(rWall3);
 
         // Light
-        const hallLight = new THREE.PointLight(0x442222, 1.5, 30);
+        const hallLight = new THREE.PointLight(0x442222, 6.0, 30);
         hallLight.position.set(oX, -6, 0);
-        this.addLight(hallLight, 1.5);
+        this.addLight(hallLight, 6.0);
 
-        const livLight = new THREE.PointLight(0x223322, 1.1, 15);
+        const livLight = new THREE.PointLight(0x223322, 4.5, 15);
         livLight.position.set(oX + 6, -6, 3);
-        this.addLight(livLight, 1.1);
+        this.addLight(livLight, 4.5);
 
         if (this.loopCount === 3) {
             // --- Loop 3+: V-Junction beyond the Entrance ---
