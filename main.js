@@ -2775,16 +2775,16 @@ class NightmareGame {
             if (this.loopCount === 1) {
                 this.addProgress('read_diary_1');
                 this.showDialogue('……お姉ちゃんの日記帳だ。少しだけ、中を見てみよう……。', () => {
-                    this.showDialogue('「小さいころとても泣いてた気がする。<br>弟はボーっとしてるだけ。<br>おかあさんとおとうさんも泣いていて…なんで泣いたんだろう」');
+                    this.showDialogue('「お母さんとお父さんがずっと泣いている。<br>弟はまだ小さくて、ボーっとしてるだけ。<br>……私には何が起きたのか、最初はよく分からなかった。」');
                 });
             }
             else if (this.loopCount === 2) {
                 this.addProgress('read_diary_2');
                 this.showDialogue('……お姉ちゃんの日記帳だ。少しだけ、中を見てみよう……。', () => {
-                    this.showDialogue('「小さいころとても泣いてた気がする。<br>弟はボーっとしてるだけ。<br>おかあさんとおとうさんも泣いていて…なんで泣いたんだろう」', () => {
+                    this.showDialogue('「お母さんとお父さんがずっと泣いている。<br>弟はまだ小さくて、ボーっとしてるだけ。<br>……私には何が起きたのか、最初はよく分からなかった。」', () => {
                         const nextStep = () => {
                             this.showDialogue('……あれ？ さっき見た時は、こんなこと書いてなかったのに。', () => {
-                                this.showDialogue('「その日のちょっと前までは、よく分からないけど、私すごく喜んでいた気がする。<br>お母さんと一緒にいる時間が長かったのもうれしかった」', () => {
+                                this.showDialogue('「お腹が大きかった頃のお母さんは、よく私と一緒におしゃべりしてくれた。<br>『もうすぐお姉ちゃんになるんだよ』って。<br>私も、すごく楽しみにしていたのに。」', () => {
                                     this.loop2_puzzles.diary = true;
                                     this.checkLoop2Progression();
                                 });
@@ -2816,9 +2816,13 @@ class NightmareGame {
             }
             else if (this.loopCount >= 6) {
                 this.showDialogue('この日記……お姉ちゃんの字。', () => {
-                    this.showDialogue('「小さいころとても泣いてた気がする。弟はボーっとしてるだけ」<br>……僕がまだ小さくて何もわからなかった頃から、お姉ちゃんは一人で抱え込んでいたんだ。', () => {
-                        this.showDialogue('「その日のちょっと前まで、すごく喜んでいた気がする」<br>……あの子が来ることを、お姉ちゃんも楽しみにしてたんだ。', () => {
-                            this.showDialogue('「今日があの子の生まれてくるはずだった日。お母さんのしぼんだお腹を見て、弟は不思議そうな顔をしていた。みんな、少しずつあの子のことを話さなくなっていく。でも、私だけはずっと、あの子のことを覚えていようと思う。忘れないよ。絶対に。」');
+                    this.showDialogue('「お父さんもお母さんも、あの日からずっと泣いていた。弟は小さくて、ボーっとしてるだけだった。」<br>……僕がまだ小さくて何もわからなかった頃から、お姉ちゃんは一人で抱え込んでいたんだ。', () => {
+                        this.showDialogue('「お腹が大きかったお母さんは、あの日まで、すごく嬉しそうだったのに。」<br>……あの子が来ることを、お姉ちゃんも楽しみにしてたんだ。', () => {
+                            this.showDialogue('「今日があの子の生まれてくるはずだった日。お母さんのしぼんだお腹を見て、弟は不思議そうな顔をしていた。みんな、少しずつあの子のことを話さなくなっていく。でも、私だけはずっと、あの子のことを覚えていようと思う。忘れないよ。絶対に。」', () => {
+                                this.showDialogue('「――10月14日」', () => {
+                                    this.showDialogue('……玄関の暗証番号。<br>この日は、あの子が……。');
+                                });
+                            });
                         });
                     });
                 });
@@ -3134,7 +3138,28 @@ class NightmareGame {
                             this.doorL2F.position.z -= 0.05; // slide open
                             if (t2 > 1.5) {
                                 clearInterval(openAnim);
-                                this.showDialogue('…今誰か廊下にいたよね？');
+                                this.showDialogue('…今誰か廊下にいたよね？', () => {
+                                    this.showDialogue('なんか、すごい大きな足音だったような…。', () => {
+
+                                        // 玄関の解錠音（ガチャッ）
+                                        if (this.soundAssets.keypad_unlock) {
+                                            this.soundAssets.keypad_unlock.currentTime = 0;
+                                            this.soundAssets.keypad_unlock.play().catch(e => { });
+                                        }
+
+                                        setTimeout(() => {
+                                            // ドアが開く音
+                                            if (this.soundAssets.door_open) {
+                                                this.soundAssets.door_open.currentTime = 0;
+                                                this.soundAssets.door_open.play().catch(e => { });
+                                            }
+                                            this.showDialogue('（ガチャッ…）<br>……1階から、玄関の扉が開くような音がした。', () => {
+                                                this.updateObjective('開いた玄関から外に出る');
+                                            });
+                                        }, 800);
+
+                                    });
+                                });
                             }
                         }, 16);
                     }, 1000);
@@ -3787,11 +3812,12 @@ class NightmareGame {
         this.mapRoot.add(rWall3);
 
         // Light
-        const hallLight = new THREE.PointLight(0x442222, 6.0, 30);
+        // 色を自然な白(0xffeedd)に変更
+        const hallLight = new THREE.PointLight(0xffeedd, 6.0, 30);
         hallLight.position.set(oX, -6, 0);
         this.addLight(hallLight, 6.0);
 
-        const livLight = new THREE.PointLight(0x223322, 4.5, 15);
+        const livLight = new THREE.PointLight(0xffeedd, 4.5, 15);
         livLight.position.set(oX + 6, -6, 3);
         this.addLight(livLight, 4.5);
 
