@@ -1599,7 +1599,11 @@ class NightmareGame {
     }
 
     updateObjective(text, ignoredProgress) {
-        document.getElementById('objective-text').innerText = `現在の目的：${text}`;
+        if (!text || text.trim() === '') {
+            document.getElementById('objective-text').innerText = '';
+        } else {
+            document.getElementById('objective-text').innerText = `現在の目的：${text}`;
+        }
         // 進捗の更新は addProgress に一任するため、ここではUIのフラッシュのみ行う
         const el = document.getElementById('progress-text');
         el.style.color = '#fff';
@@ -3183,7 +3187,7 @@ class NightmareGame {
 
                 // 周回ごとに1階に降りた時のヒントを変える
                 if (this.loopCount === 1) {
-                    this.updateObjective('暗闇の廊下を進む');
+                    this.updateObjective('');
                 } else if (this.loopCount === 3) {
                     this.updateObjective('静まり返った1階を調べる');
                 } else if (this.loopCount >= 6) {
