@@ -1656,12 +1656,12 @@ class NightmareGame {
         this.pointLight.castShadow = true;
 
         // 1周目から2周目と同等の明るさになるよう、強度を2倍(1.8→3.6, 4.5→9.0)に設定
-        this.ambientLight = new THREE.AmbientLight(0x404050, 3.6);
+        this.ambientLight = new THREE.AmbientLight(0x404050, 3.0);
         this.scene.add(this.ambientLight);
         this.scene.add(this.pointLight);
 
-        this.allLights.push({ light: this.ambientLight, baseIntensity: 3.6 });
-        this.allLights.push({ light: this.pointLight, baseIntensity: 9.0 });
+        this.allLights.push({ light: this.ambientLight, baseIntensity: 3.0 });
+        this.allLights.push({ light: this.pointLight, baseIntensity: 7.5 });
     }
 
     createMap() {
@@ -3813,13 +3813,13 @@ class NightmareGame {
 
         // Light
         // 色を自然な白(0xffeedd)に変更
-        const hallLight = new THREE.PointLight(0xffeedd, 6.0, 30);
+        const hallLight = new THREE.PointLight(0xffeedd, 4.0, 30);
         hallLight.position.set(oX, -6, 0);
-        this.addLight(hallLight, 6.0);
+        this.addLight(hallLight, 4.0);
 
-        const livLight = new THREE.PointLight(0xffeedd, 4.5, 15);
+        const livLight = new THREE.PointLight(0xffeedd, 2.5, 15);
         livLight.position.set(oX + 6, -6, 3);
-        this.addLight(livLight, 4.5);
+        this.addLight(livLight, 2.5);
 
         if (this.loopCount === 3) {
             // --- Loop 3+: V-Junction beyond the Entrance ---
