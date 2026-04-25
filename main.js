@@ -2960,8 +2960,8 @@ class NightmareGame {
         this.gameState = 'PLAYING';
         document.getElementById('photo-overlay').style.display = 'none';
 
-        // 4周目以降はこのセリフを出さないようにする
-        if (this.loopCount < 4) {
+        // 1周目のみこのセリフと目的表示を出すようにする
+        if (this.loopCount === 1) {
             this.updateObjective("不気味な絵");
             this.showDialogue("……なんだこれ。家族の絵…？。<br>でも、僕の家4人しかいないし、お母さんと手をつないでるこの気味の悪い子は……誰だろう。");
         }
